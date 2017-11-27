@@ -11,6 +11,8 @@ using namespace boost::asio;
 using namespace boost::posix_time;
 using namespace dev;
 
+std::string EMPTY_STR("\n");
+
 MemoryDB db;
 GenericTrieDB<MemoryDB> t(&db);
 
@@ -75,7 +77,11 @@ void insert(int id, std::string name) {
 }
 
 std::string lookup(int id) {
-  return bytes_to_string(&t.at(int_to_bytes(id))[0]);
+  if (t.contains(int_to_bytes(id))) {
+    return bytes_to_string(&t.at(int_to_bytes(id))[0]);
+  } else {
+    return "\n";
+  }
 }
 
 struct node;
@@ -89,27 +95,28 @@ struct node : boost::enable_shared_from_this<node> {
   node() : sock_(service) {
   }
 
-  void serve_insert() {
+  void serve_node() {
     try {
-      read_insert_query();
-      process_insert_query();
+      read_query();
+      process_query();
     } catch(boost::system::system_error & err) {
       std::cout<<err.what()<<std::endl;
       stop();
     }
   }
 
+  /*
   void serve_lookup() {
     std::string output;
     try {
       read_lookup_query();
-      output = process_lookup_query();
-      write(output + "\n");
+      process_lookup_query();
     } catch(boost::system::system_error & err) {
       std::cout<<err.what()<<std::endl;
       stop();
     }
   }
+  */
 
   ip::tcp::socket & sock() {
     return sock_;
@@ -121,19 +128,21 @@ struct node : boost::enable_shared_from_this<node> {
   }
 
 private:
-  void read_insert_query() {
+  void read_query() {
     if (sock_.available()) {
       already_read_ += sock_.read_some(buffer(buff_ + already_read_, max_msg - already_read_));
     }
   }
 
+  /*
   void read_lookup_query() {
     if (sock_.available()) {
       already_read_ += sock_.read_some(buffer(buff_ + already_read_, max_msg - already_read_));
     }
   }
+  */
 
-  void process_insert_query() {
+  void process_query() {
     bool found_endofline = std::find(buff_, buff_ + already_read_, '\n') < buff_ + already_read_;
     if (!found_endofline) {
       return;
@@ -143,13 +152,28 @@ private:
     std::copy(buff_ + already_read_, buff_ + max_msg, buff_);
     already_read_ -= pos + 1;
 
-    int id = std::stoi(get_id(msg));
-    std::string name = get_name(msg);
-
-    boost::recursive_mutex::scoped_lock lk(cs);
-    insert(id, name);
+    if (msg.find("insert") == 0) {
+      int id = std::stoi(get_id(parse(msg)));
+      std::string name = get_name(parse(msg));
+      boost::recursive_mutex::scoped_lock lk(cs);
+      std::cout<<"inserting "<<id<<", "<<name<<std::endl;
+      insert(id, name);
+      write("*INSERTED* " + std::to_string(id) + "->" + name + "\n");
+    } else if (msg.find("lookup") == 0) {
+      int id = std::stoi(get_id(parse(msg)));       
+      boost::recursive_mutex::scoped_lock lk(cs);
+      std::cout<<"looking up "<<id<<std::endl;
+      output_ = lookup(id);
+      if (EMPTY_STR != output_) {
+        write("*LOOKUP* " + output_ + "\n");
+      } else {
+        write("*KEY NOT FOUND*\n");
+      }
+      output_ = "\n";
+    }
   }
   
+  /*
   std::string process_lookup_query() {
     bool found_endofline = std::find(buff_, buff_ + already_read_, '\n') < buff_ + already_read_;
     if (!found_endofline) {
@@ -160,10 +184,23 @@ private:
     std::copy(buff_ + already_read_, buff_ + max_msg, buff_);
     already_read_ -= pos + 1;
 
-    int id = std::stoi(get_id(msg));
+    if (msg.find("lookup") == 0) {
+      int id = std::stoi(get_id(parse(msg)));
 
-    boost::recursive_mutex::scoped_lock lk(cs);
-    return lookup(id);
+      boost::recursive_mutex::scoped_lock lk(cs);
+      std::cout<<"looking up "<<id<<std::endl;
+      return lookup(id);
+    } else {
+      return "\n";
+    }
+  }
+  */
+
+  std::string parse(std::string msg) {
+    if (msg.find("/") != -1) {
+      return msg.substr(msg.find("/")+1, std::string::npos);
+    }
+    return "_";
   }
  
   std::string get_id(std::string msg) {
@@ -172,6 +209,7 @@ private:
     if ((found_delimeter = msg.find(":")) != std::string::npos) {
       id = msg.substr(0, found_delimeter);
     }
+    // std::cout<<"id found: "<<id<<std::endl;
     return id;
   }
 
@@ -181,6 +219,7 @@ private:
     if ((found_delimeter = msg.find(":")) != std::string::npos) {
       name =  msg.substr(found_delimeter+1, std::string::npos);
     }
+    // std::cout<<"name found: "<<name<<std::endl;
     return name;
   }
 
@@ -193,6 +232,7 @@ private:
   enum {max_msg = 1024};
   int already_read_;
   char buff_[max_msg];
+  std::string output_;
 };
 
 void accept_client_thread() {
@@ -205,22 +245,22 @@ void accept_client_thread() {
   }
 }
 
-void insert_thread() {
+void thread_1() {
   while(true) {
     boost::this_thread::sleep(millisec(1));
     boost::recursive_mutex::scoped_lock lk(cs);
     for(array::iterator a = nodes.begin(), z = nodes.end(); a != z; ++a) {
-      (*a)->serve_insert();
+      (*a)->serve_node();
     }
   }
 }
 
-void lookup_thread() {
+void thread_2() {
   while(true) {
     boost::this_thread::sleep(millisec(1));
     boost::recursive_mutex::scoped_lock lk(cs);
     for(array::iterator a = nodes.begin(), z = nodes.end(); a != z; ++a) {
-      (*a)->serve_lookup();
+      (*a)->serve_node();
     }
   }
 }
@@ -236,8 +276,8 @@ int main() {
 
   boost::thread_group threads;
   threads.create_thread(accept_client_thread);
-  threads.create_thread(insert_thread);
-  threads.create_thread(lookup_thread);
+  threads.create_thread(thread_1);
+  threads.create_thread(thread_2);
   threads.join_all();
   return 0;
 }
