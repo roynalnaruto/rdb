@@ -92,7 +92,7 @@ array nodes;
 boost::recursive_mutex cs;
 
 struct node : boost::enable_shared_from_this<node> {
-  node() : sock_(service) {
+  node() : sock_(service), output_(EMPTY_STR) {
   }
 
   void serve_node() {
