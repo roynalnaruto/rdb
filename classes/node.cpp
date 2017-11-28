@@ -1,12 +1,8 @@
-struct node;
-io_service service;
-typedef boost::shared_ptr<node> node_ptr;
-typedef std::vector<node_ptr> array;
-array nodes;
-boost::recursive_mutex cs;
-
+/**
+ * node class
+ */
 struct node : boost::enable_shared_from_this<node> {
-  node() : sock_(service), output_(EMPTY_STR) {
+  node() : sock_(service) {
   }
 
   void serve_node() {
@@ -45,61 +41,20 @@ private:
     std::copy(buff_ + already_read_, buff_ + max_msg, buff_);
     already_read_ -= pos + 1;
 
-    if (msg.find("create-table") == 0) {
-      int n_columns = std::stoi(get_id(parse(msg)));
-      std::string table_name = get_name(parse(msg));
-      std::cout<<"creating table: "<<table_name<<" with "<<n_columns<<" columns"<<std::endl;
-      create_table(table_name, n_columns);
-      write("*CREATED TABLE*" + table_name + "\n");
+    if (msg.find("createtable") == 0) {
+      std::string table_name = create_table_helper(parse_to_clean(msg));
+      write("*CREATED TABLE* " + table_name + "\n");
     } else if (msg.find("insert") == 0) {
-      int id = std::stoi(get_id(parse(msg)));
-      std::string name = get_name(parse(msg));
-      boost::recursive_mutex::scoped_lock lk(cs);
-      std::cout<<"inserting "<<id<<", "<<name<<std::endl;
-      // insert(id, name);
-      write("*INSERTED* " + std::to_string(id) + "->" + name + "\n");
+      std::string response = insert_row_helper(parse_to_clean(msg));
+      write("*INSERTED* " + response + "\n");
     } else if (msg.find("lookup") == 0) {
-      int id = std::stoi(get_id(parse(msg)));       
-      boost::recursive_mutex::scoped_lock lk(cs);
-      std::cout<<"looking up "<<id<<std::endl;
-
-      //
-      table_name_ = "sample_table";
-      //
-
-      output_ = lookup(tables.at(table_name_), tables_info.at(table_name_), id);
-      if (EMPTY_STR != output_) {
-        write("*LOOKUP* " + output_ + "\n");
+      std::string response = lookup_helper(parse_to_clean(msg));
+      if (EMPTY_STR != response) {
+        write("*LOOKUP* " + response + "\n");
       } else {
         write("*KEY NOT FOUND*\n");
       }
-      output_ = "\n";
     }
-  }
-  
-  std::string parse(std::string msg) {
-    if (msg.find("/") != -1) {
-      return msg.substr(msg.find("/")+1, std::string::npos);
-    }
-    return "_";
-  }
- 
-  std::string get_id(std::string msg) {
-    size_t found_delimeter;
-    std::string id("-1");
-    if ((found_delimeter = msg.find(":")) != std::string::npos) {
-      id = msg.substr(0, found_delimeter);
-    }
-    return id;
-  }
-
-  std::string get_name(std::string msg) {
-    size_t found_delimeter;
-    std::string name("-1");
-    if ((found_delimeter = msg.find(":")) != std::string::npos) {
-      name =  msg.substr(found_delimeter+1, std::string::npos);
-    }
-    return name;
   }
 
   void write(const std::string & msg) {
@@ -111,6 +66,4 @@ private:
   enum {max_msg = 1024};
   int already_read_;
   char buff_[max_msg];
-  std::string output_;
-  std::string table_name_;
 };

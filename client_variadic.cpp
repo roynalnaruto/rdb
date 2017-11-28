@@ -37,42 +37,41 @@ void read_response() {
   process_msg();
 }
 
-void send_insert_query(int id, std::string name) {
-  std::string msg("insert/" + std::to_string(id) + ":" + name + "\n");
+void send_insert_query(std::string msg) {
+  std::cout<<"sending query: "<<msg<<std::endl;
   sock.write_some(buffer(msg));
 }
 
-void send_lookup_query(int id) {
-  std::string msg("lookup/" + std::to_string(id) + ":" + "\n");
+void send_lookup_query(std::string msg) {
   sock.write_some(buffer(msg));
 }
 
 void request_insert_data() {
-  int input_id;
-  std::string input_name;
-  std::cout<<"id (int): ";
-  std::cin>>input_id;
-  std::cout<<"name (string): ";
-  std::cin>>input_name;
-  send_insert_query(input_id, input_name);
+  std::string table_name;
+  int id;
+  std::cout<<"Enter table name to insert to: ";
+  std::cin>>table_name;
+  std::cout<<"Enter row 'id': ";
+  std::cin>>id;
+  std::string msg = "insert/" + std::to_string(id) + ":" + table_name;
+  std::cout<<"Enter columns (semi-colon separated) (min. 1, max. 4): ";
+  std::string c_val;
+  std::cin>>c_val;
+  msg += ";" + c_val + "\n";
+  send_insert_query(msg);
   read_response();
 }
 
 void request_lookup_data() {
+  std::string table_name;
+  std::cout<<"Enter table name to lookup in: ";
+  std::cin>>table_name;
   int input_id;
-  std::cout<<"id (int): ";
+  std::cout<<"Enter 'id' field (int): ";
   std::cin>>input_id;
-  send_lookup_query(input_id);
+  std::string msg = "lookup/" + std::to_string(input_id) + ":" + table_name + "\n";
+  send_lookup_query(msg);
   read_response();
-}
-
-std::string columns_as_string(std::vector<std::string> columns) {
-  std::string result("");
-  for(int i = 0; i<columns.size()-1; i++) {
-    result += columns[i] + " ";
-  }
-  result += columns[columns.size()-1];
-  return result;
 }
 
 void send_create_table_query(std::string msg) {
@@ -80,14 +79,13 @@ void send_create_table_query(std::string msg) {
 }
 
 void request_create_table() {
-  std::cout<<"enter columns of table (int, long, double, string) (space separated)\n: ";
-  std::vector<std::string> columns;
-  std::string column;
-  while(std::cin>>column) {
-    columns.push_back(column);
-  }
-  std::string columns_as_string = columns_as_string(columns);
-  std::string msg = "createtable/" + columns_as_string + "\n";
+  std::string table_name;
+  int n_col;
+  std::cout<<"Enter name of table: ";
+  std::cin>>table_name;
+  std::cout<<"\nEnter number of columns (min. 2, max. 5): ";
+  std::cin>>n_col;
+  std::string msg = "createtable/" + std::to_string(n_col) + ":" + table_name + "\n";
   send_create_table_query(msg);
   read_response();
 }
@@ -97,7 +95,6 @@ void run_client() {
   try {
     sock.connect(ep);
     hello_server();
-    // read_response();
     connected_ = true;
   } catch(boost::system::system_error & err) {
     std::cout<<"client terminated: "<<err.what()<<std::endl;
@@ -113,8 +110,8 @@ void run_client() {
         request_create_table();
         break;
       case 2:
-	request_insert_data();
-	break;
+	      request_insert_data();
+	      break;
       case 3:
         request_lookup_data();
         break;
@@ -124,21 +121,8 @@ void run_client() {
   }
 }
 
-/*
-void ping() {
-  while(true) {
-    boost::this_thread::sleep(boost::posix_time::millisec(100));
-    if (connected_) {
-      std::string msg ("ping\n");
-      sock.write_some(buffer(msg));
-    }
-  }
-}
-*/
-
 int main(int argc, char* argv[]) {
   boost::thread_group threads;
   threads.create_thread(run_client);
-  // threads.create_thread(ping);
   threads.join_all();
 }
