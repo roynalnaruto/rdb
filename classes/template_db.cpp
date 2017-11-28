@@ -39,10 +39,13 @@ struct Key1;
 struct Key2;
 struct Key3;
 
+// restrict: 3 types of tables
+// can define more, but at compile time should know table structure
 using Table2 = Table<Column<int>, Column<std::string, Key1>>;
 using Table3 = Table<Column<int>, Column<std::string, Key1>, Column<std::string, Key2>>;
 using Table4 = Table<Column<int>, Column<std::string, Key1>, Column<std::string, Key2>, Column<std::string, Key3>>;
 
+/*
 int main() {
   Table2 table2;
   table2.set<int>(std::make_shared<int>(1));
@@ -65,3 +68,4 @@ int main() {
   std::cout<<*table3.get<std::string, Key2>()<<std::endl;
   return 0;
 }
+*/
