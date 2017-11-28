@@ -12,14 +12,43 @@ std::vector<unsigned char> int_to_bytes(int param) {
   return array_of_byte;
 }
 
-std::vector<unsigned char> obj_to_bytes(Person* p) {
+std::vector<unsigned char> obj_to_bytes(Table2* p) {
   auto ptr = reinterpret_cast<byte*>(p);
   auto buffer = std::vector<byte>{ptr, ptr + sizeof(*p)};
   return buffer;
 }
 
-std::string bytes_to_string(char* buffer) {
-  auto person_deserialized = reinterpret_cast<Person*>(buffer);
-  return (*person_deserialized).get_person();
+std::vector<unsigned char> obj_to_bytes(Table3* p) {
+  auto ptr = reinterpret_cast<byte*>(p);
+  auto buffer = std::vector<byte>{ptr, ptr + sizeof(*p)};
+  return buffer;
+}
+
+std::vector<unsigned char> obj_to_bytes(Table4* p) {
+  auto ptr = reinterpret_cast<byte*>(p);
+  auto buffer = std::vector<byte>{ptr, ptr + sizeof(*p)};
+  return buffer;
+}
+
+std::vector<unsigned char> obj_to_bytes(Table5* p) {
+  auto ptr = reinterpret_cast<byte*>(p);
+  auto buffer = std::vector<byte>{ptr, ptr + sizeof(*p)};
+  return buffer;
+}
+
+std::string bytes_to_string(char* buffer, int n_col) {
+  if (n_col == 2) {
+    auto row_deserialized = reinterpret_cast<Table2*>(buffer);
+    return (*row_deserialized).get_row();
+  } else if (n_col == 3) {
+    auto row_deserialized = reinterpret_cast<Table3*>(buffer);
+    return (*row_deserialized).get_row();
+  } else if (n_col == 4) {
+    auto row_deserialized = reinterpret_cast<Table4*>(buffer);
+    return (*row_deserialized).get_row();
+  } else if (n_col == 5) {
+    auto row_deserialized = reinterpret_cast<Table5*>(buffer);
+    return (*row_deserialized).get_row();
+  } else return "\n";
 }
 

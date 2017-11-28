@@ -19,19 +19,6 @@ struct node : boost::enable_shared_from_this<node> {
     }
   }
 
-  /*
-  void serve_lookup() {
-    std::string output;
-    try {
-      read_lookup_query();
-      process_lookup_query();
-    } catch(boost::system::system_error & err) {
-      std::cout<<err.what()<<std::endl;
-      stop();
-    }
-  }
-  */
-
   ip::tcp::socket & sock() {
     return sock_;
   }
@@ -48,14 +35,6 @@ private:
     }
   }
 
-  /*
-  void read_lookup_query() {
-    if (sock_.available()) {
-      already_read_ += sock_.read_some(buffer(buff_ + already_read_, max_msg - already_read_));
-    }
-  }
-  */
-
   void process_query() {
     bool found_endofline = std::find(buff_, buff_ + already_read_, '\n') < buff_ + already_read_;
     if (!found_endofline) {
@@ -66,18 +45,29 @@ private:
     std::copy(buff_ + already_read_, buff_ + max_msg, buff_);
     already_read_ -= pos + 1;
 
-    if (msg.find("insert") == 0) {
+    if (msg.find("create-table") == 0) {
+      int n_columns = std::stoi(get_id(parse(msg)));
+      std::string table_name = get_name(parse(msg));
+      std::cout<<"creating table: "<<table_name<<" with "<<n_columns<<" columns"<<std::endl;
+      create_table(table_name, n_columns);
+      write("*CREATED TABLE*" + table_name + "\n");
+    } else if (msg.find("insert") == 0) {
       int id = std::stoi(get_id(parse(msg)));
       std::string name = get_name(parse(msg));
       boost::recursive_mutex::scoped_lock lk(cs);
       std::cout<<"inserting "<<id<<", "<<name<<std::endl;
-      insert(id, name);
+      // insert(id, name);
       write("*INSERTED* " + std::to_string(id) + "->" + name + "\n");
     } else if (msg.find("lookup") == 0) {
       int id = std::stoi(get_id(parse(msg)));       
       boost::recursive_mutex::scoped_lock lk(cs);
       std::cout<<"looking up "<<id<<std::endl;
-      output_ = lookup(id);
+
+      //
+      table_name_ = "sample_table";
+      //
+
+      output_ = lookup(tables.at(table_name_), tables_info.at(table_name_), id);
       if (EMPTY_STR != output_) {
         write("*LOOKUP* " + output_ + "\n");
       } else {
@@ -87,29 +77,6 @@ private:
     }
   }
   
-  /*
-  std::string process_lookup_query() {
-    bool found_endofline = std::find(buff_, buff_ + already_read_, '\n') < buff_ + already_read_;
-    if (!found_endofline) {
-      return "\n";
-    }
-    size_t pos = std::find(buff_, buff_ + already_read_, '\n') - buff_;
-    std::string msg(buff_, pos);
-    std::copy(buff_ + already_read_, buff_ + max_msg, buff_);
-    already_read_ -= pos + 1;
-
-    if (msg.find("lookup") == 0) {
-      int id = std::stoi(get_id(parse(msg)));
-
-      boost::recursive_mutex::scoped_lock lk(cs);
-      std::cout<<"looking up "<<id<<std::endl;
-      return lookup(id);
-    } else {
-      return "\n";
-    }
-  }
-  */
-
   std::string parse(std::string msg) {
     if (msg.find("/") != -1) {
       return msg.substr(msg.find("/")+1, std::string::npos);
@@ -123,7 +90,6 @@ private:
     if ((found_delimeter = msg.find(":")) != std::string::npos) {
       id = msg.substr(0, found_delimeter);
     }
-    // std::cout<<"id found: "<<id<<std::endl;
     return id;
   }
 
@@ -133,7 +99,6 @@ private:
     if ((found_delimeter = msg.find(":")) != std::string::npos) {
       name =  msg.substr(found_delimeter+1, std::string::npos);
     }
-    // std::cout<<"name found: "<<name<<std::endl;
     return name;
   }
 
@@ -147,4 +112,5 @@ private:
   int already_read_;
   char buff_[max_msg];
   std::string output_;
+  std::string table_name_;
 };

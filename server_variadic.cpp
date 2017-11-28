@@ -15,9 +15,23 @@ using namespace dev;
 #include "classes/template_db.cpp"
 #include "utils/utils.cpp"
 
-MemoryDB db;
-GenericTrieDB<MemoryDB> t(&db);
+// MemoryDB db;
+// GenericTrieDB<MemoryDB> t(&db);
+
+typedef std::map<std::string, GenericTrieDB<MemoryDB>*> table_map;
+typedef std::pair<std::string, GenericTrieDB<MemoryDB>*> table_map_pair;
+table_map tables;
+
+typedef std::map<std::string, int> table_col_info;
+typedef std::pair<std::string, int> table_col_info_pair;
+table_col_info tables_info;
+
 #include "helpers/trie_db_interface.cpp"
+
+// create sample table to start with
+// create_table("sample_table", 2);
+// insert(tables.at("sample_table"), 1, "rohit");
+// std::cout<<lookup(tables.at("sample_table"), 1)<<std::endl;
 
 #include "classes/node.cpp"
 
@@ -53,7 +67,12 @@ void thread_2() {
 
 int main() {
   // use different 't' for different tables?
-  t.init();
+  // t.init();
+
+  create_table("sample_table", 2);
+  insert(tables.at("sample_table"), 1, "rohit");
+  std::cout<<lookup(tables.at("sample_table"), tables_info.at("sample_table"), 1)<<std::endl;
+
   boost::thread_group threads;
   threads.create_thread(accept_client_thread);
   threads.create_thread(thread_1);
