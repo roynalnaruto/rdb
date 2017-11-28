@@ -8,10 +8,16 @@ using cpp-ethereum merkle patricia tree
 
 `./build_server_client`
 
+## compilatio for linux
+
+change `lboost_thread-mt` to `lboost_thread`
+
+change `-std=c++1z` to `-std=c++17`
+
 ## run
 
-`./server`
+`./server_variadic`
 
 on multiple terminals
 
-`./client`
+`./client_variadic`
