@@ -12,12 +12,15 @@ using namespace boost::posix_time;
 using namespace dev;
 
 #include "classes/person.cpp"
+#include "classes/template_db.cpp"
 #include "utils/utils.cpp"
 
-MemoryDB db;
-GenericTrieDB<MemoryDB> t(&db);
-#include "helpers/trie_db_interface.cpp"
+typedef std::map<std::string, int> table_col_info;
+typedef std::pair<std::string, int> table_col_info_pair;
+table_col_info tables_info;
 
+#include "helpers/trie_db_interface.cpp"
+#include "helpers/node_helper.cpp"
 #include "classes/node.cpp"
 
 void accept_client_thread() {
@@ -52,6 +55,12 @@ void thread_2() {
 
 int main() {
   t.init();
+
+  // create initial table
+  // create initial row in table
+  create_table("sample_table", 2);
+  insert("sample_table", 1, "rohit");
+
   boost::thread_group threads;
   threads.create_thread(accept_client_thread);
   threads.create_thread(thread_1);

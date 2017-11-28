@@ -1,3 +1,3 @@
-g++ server.cpp SHA3.cpp RLP.cpp MemoryDB.cpp TrieCommon.cpp CommonData.cpp Log.cpp -lboost_system -lboost_thread-mt -lpthread -std=c++11 -stdlib=libc++ -o server
+g++ server_variadic.cpp libdevcore/SHA3.cpp libdevcore/RLP.cpp libdevcore/MemoryDB.cpp libdevcore/TrieCommon.cpp libdevcore/CommonData.cpp libdevcore/Log.cpp -lpthread -lboost_system -lboost_thread-mt -std=c++1z -stdlib=libc++ -o server_variadic
 
-g++ client.cpp -std=c++11 -lboost_system -lboost_thread-mt -o client
+g++ client_variadic.cpp -std=c++11 -stdlib=libc++ -lboost_system -lboost_thread-mt -lpthread -o client_variadic
