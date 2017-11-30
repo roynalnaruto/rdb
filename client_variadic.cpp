@@ -90,6 +90,17 @@ void request_create_table() {
   read_response();
 }
 
+void send_list_tables_query(std::string msg) {
+  sock.write_some(buffer(msg));
+}
+
+void request_list_tables() {
+  std::string msg("listtables");
+  msg += "\n";
+  send_list_tables_query(msg);
+  read_response();
+}
+
 void run_client() {
   std::cout<<"Hello! Connecting..."<<std::endl;
   try {
@@ -102,7 +113,7 @@ void run_client() {
   int option;
   std::string msg_to_be_sent;
   while(true) {
-    std::cout<<"Enter option:\n(1) create table\n(2) insert in table\n(3) lookup in table\n"<<std::endl;
+    std::cout<<"Enter option:\n(1) create table\n(2) insert in table\n(3) lookup in table\n(4) list all tables\n"<<std::endl;
     std::cout<<"> ";
     std::cin>>option;
     switch(option) {
@@ -110,10 +121,13 @@ void run_client() {
         request_create_table();
         break;
       case 2:
-	      request_insert_data();
-	      break;
+	request_insert_data();
+	break;
       case 3:
         request_lookup_data();
+        break;
+      case 4:
+        request_list_tables();
         break;
       default:
         break;

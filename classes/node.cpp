@@ -54,6 +54,9 @@ private:
       } else {
         write("*KEY NOT FOUND*\n");
       }
+    } else if (msg.find("listtables") == 0) {
+      std::string response = list_tables_helper();
+      write("*LIST TABLES*" + response + "\n");
     }
   }
 
