@@ -56,3 +56,11 @@ std::string insert_row_helper(std::string msg) {
   }
   return response;
 }
+
+std::string list_tables_helper() {
+  std::string response("");
+  for(std::map<std::string, int>::iterator it = tables_info.begin(); it != tables_info.end(); ++it) {
+    response += "(" + it->first + ", " + std::to_string(it->second) + ")";
+  }
+  return response;
+}
