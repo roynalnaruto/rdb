@@ -53,5 +53,5 @@ std::string lookup(std::string table_name, int n_col, int id) {
 }
 
 void create_table(std::string name, int n_col) {
-  tables_info.insert( table_col_info_pair(name, n_col) );
+  tables_info.insert(table_col_info_pair(name, n_col));
 }
