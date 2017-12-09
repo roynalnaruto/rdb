@@ -23,7 +23,12 @@ std::string lookup_helper(std::string msg) {
   std::string table_name = parse_name(msg);
   std::cout<<"looking up "<<id<<" in table "<<table_name<<std::endl;
   boost::recursive_mutex::scoped_lock lk(cs);
-  return lookup(table_name, tables_info.at(table_name), id);
+  if (tables_info.count(table_name)) {
+    return lookup(table_name, tables_info.at(table_name), id);
+  } else {
+    std::string response ("Table " + table_name + " does not exist. Please 'Lisk Tables'");
+    return response;
+  }
 }
 
 std::string insert_row_helper(std::string msg) {

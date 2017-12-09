@@ -56,7 +56,7 @@ private:
       }
     } else if (msg.find("listtables") == 0) {
       std::string response = list_tables_helper();
-      write("*LIST TABLES*" + response + "\n");
+      write("*LIST TABLES* " + response + "\n");
     }
   }
 
