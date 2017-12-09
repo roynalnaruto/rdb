@@ -2,17 +2,11 @@
 
 using cpp-ethereum merkle patricia tree
 
-## compile
+## compilation MacOS
 
 `chmod +x build_server_client.sh`
 
-`./build_server_client`
-
-## compilatio for linux
-
-change `lboost_thread-mt` to `lboost_thread`
-
-change `-std=c++1z` to `-std=c++17`
+`./build_server_client.sh`
 
 ## run
 
@@ -21,3 +15,11 @@ change `-std=c++1z` to `-std=c++17`
 on multiple terminals
 
 `./client_variadic`
+
+## tests
+
+Unit tests for `utils`, `template_db`, `db_interface` (BOOST.Test)
+
+`chmod +x run_tests.sh`
+
+`./run_tests.sh`
